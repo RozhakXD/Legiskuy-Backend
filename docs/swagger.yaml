@@ -1,0 +1,713 @@
+basePath: /api/v1
+definitions:
+  internal_auth.LoginInput:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  internal_auth.RegisterInput:
+    properties:
+      name:
+        type: string
+      password:
+        type: string
+      role:
+        type: string
+      username:
+        type: string
+    type: object
+  internal_candidate.CreateCandidateInput:
+    properties:
+      name:
+        type: string
+      party:
+        type: string
+    type: object
+  internal_candidate.UpdateCandidateInput:
+    properties:
+      name:
+        type: string
+      party:
+        type: string
+    type: object
+  internal_election.CastVoteInput:
+    properties:
+      candidate_id:
+        type: integer
+      voter_id:
+        type: integer
+    type: object
+  internal_election.SetThresholdInput:
+    properties:
+      threshold:
+        type: integer
+    type: object
+  internal_election.SetTimeInput:
+    properties:
+      end_time:
+        type: string
+      start_time:
+        type: string
+    type: object
+  internal_voter.CreateVoterInput:
+    properties:
+      name:
+        type: string
+    type: object
+  internal_voter.UpdateVoterInput:
+    properties:
+      name:
+        type: string
+    type: object
+host: localhost:3000
+info:
+  contact:
+    name: Rozhak
+    url: https://github.com/RozhakXD
+  description: This is the API for the LegisKuy (Pemilu) application.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  title: LegisKuy API
+  version: "1.0"
+paths:
+  /candidates:
+    get:
+      consumes:
+      - application/json
+      description: Get all candidates with optional filtering and sorting
+      parameters:
+      - description: Filter candidates by name
+        in: query
+        name: name
+        type: string
+      - description: Filter candidates by party
+        in: query
+        name: party
+        type: string
+      - description: Sort by field (name, party, vote_count)
+        in: query
+        name: sort_by
+        type: string
+      - description: Sort order (asc, desc)
+        in: query
+        name: order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of candidates
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get all candidates
+      tags:
+      - candidate
+    post:
+      consumes:
+      - application/json
+      description: Create a new candidate with the provided name and party
+      parameters:
+      - description: Candidate Data
+        in: body
+        name: candidate
+        required: true
+        schema:
+          $ref: '#/definitions/internal_candidate.CreateCandidateInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Candidate created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request - cannot parse JSON or missing required fields
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new candidate
+      tags:
+      - candidate
+  /candidates/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a candidate by their ID
+      parameters:
+      - description: Candidate ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Candidate deleted successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad request - invalid candidate ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not found - candidate not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete candidate
+      tags:
+      - candidate
+    get:
+      consumes:
+      - application/json
+      description: Get a specific candidate by their ID
+      parameters:
+      - description: Candidate ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Candidate details
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request - invalid candidate ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not found - candidate not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get candidate by ID
+      tags:
+      - candidate
+    put:
+      consumes:
+      - application/json
+      description: Update an existing candidate's information
+      parameters:
+      - description: Candidate ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated candidate data
+        in: body
+        name: candidate
+        required: true
+        schema:
+          $ref: '#/definitions/internal_candidate.UpdateCandidateInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated candidate details
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request - invalid candidate ID or cannot parse JSON
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not found - candidate not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update candidate
+      tags:
+      - candidate
+  /election/results:
+    get:
+      consumes:
+      - application/json
+      description: Get election results with optional filtering for qualified candidates
+        only
+      parameters:
+      - description: 'Filter only qualified candidates (default: false)'
+        in: query
+        name: qualified
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Election results
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get election results
+      tags:
+      - election
+  /election/threshold:
+    post:
+      consumes:
+      - application/json
+      description: Set the minimum vote threshold for candidates to be qualified
+      parameters:
+      - description: Threshold Data
+        in: body
+        name: threshold
+        required: true
+        schema:
+          $ref: '#/definitions/internal_election.SetThresholdInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Threshold set successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad request - cannot parse JSON or invalid threshold value
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Set election threshold
+      tags:
+      - election
+  /election/time:
+    post:
+      consumes:
+      - application/json
+      description: Set the start and end time for the election
+      parameters:
+      - description: Election Time Data
+        in: body
+        name: time
+        required: true
+        schema:
+          $ref: '#/definitions/internal_election.SetTimeInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Election time set successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad request - cannot parse JSON or invalid time format
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Set election time
+      tags:
+      - election
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Login a user and get a JWT token
+      parameters:
+      - description: Login Credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/internal_auth.LoginInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful with JWT token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad request - cannot parse JSON
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized - invalid credentials
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login a user
+      tags:
+      - auth
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user account with username, password, name, and
+        role
+      parameters:
+      - description: User Registration Data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/internal_auth.RegisterInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User successfully registered
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request - validation errors or username already exists
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register a new user
+      tags:
+      - auth
+  /vote:
+    post:
+      consumes:
+      - application/json
+      description: Cast a vote for a candidate in the election
+      parameters:
+      - description: Vote Data
+        in: body
+        name: vote
+        required: true
+        schema:
+          $ref: '#/definitions/internal_election.CastVoteInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Vote cast successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad request - cannot parse JSON or missing required fields
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden - election is not currently active
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not found - voter or candidate not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict - voter has already voted
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Cast a vote
+      tags:
+      - election
+  /voters:
+    get:
+      consumes:
+      - application/json
+      description: Get all voters with optional name filtering
+      parameters:
+      - description: Filter voters by name
+        in: query
+        name: name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of voters
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get all voters
+      tags:
+      - voter
+    post:
+      consumes:
+      - application/json
+      description: Create a new voter with the provided name
+      parameters:
+      - description: Voter Data
+        in: body
+        name: voter
+        required: true
+        schema:
+          $ref: '#/definitions/internal_voter.CreateVoterInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Voter created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request - cannot parse JSON or name is required
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict - voter name already exists
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new voter
+      tags:
+      - voter
+  /voters/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a voter by their ID
+      parameters:
+      - description: Voter ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Voter deleted successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad request - invalid voter ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not found - voter not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete voter
+      tags:
+      - voter
+    get:
+      consumes:
+      - application/json
+      description: Get a specific voter by their ID
+      parameters:
+      - description: Voter ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Voter details
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request - invalid voter ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not found - voter not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get voter by ID
+      tags:
+      - voter
+    put:
+      consumes:
+      - application/json
+      description: Update an existing voter's information
+      parameters:
+      - description: Voter ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated voter data
+        in: body
+        name: voter
+        required: true
+        schema:
+          $ref: '#/definitions/internal_voter.UpdateVoterInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated voter details
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request - invalid voter ID or cannot parse JSON
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not found - voter not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict - voter name already exists
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update voter
+      tags:
+      - voter
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
